@@ -2,6 +2,7 @@ library(raster)
 library(gitBasedProjects)
 library(rasterExtras)
 library(rasterPlot)
+library(benchmarkMetrics)
 setupProjectStructure()
 
 sourceAllLibs()
@@ -16,7 +17,6 @@ years = list.files(dir, include.dirs = TRUE, full.names = TRUE)
 maskMissing <- function(i) {i[i>1] = NaN; i}
 
 interpolate <- function(dats, mask) {
-    blockSize = 10
     interpolateCell <- function(d, m) {
         if (m) d[] = NaN
         else {
@@ -72,9 +72,9 @@ openYear <- function(year) {
 ## Open All (1 year per list item)
 dats = lapply(years, openYear)
 
-fname = paste(filenameOut, 'climateology.nc',sep = '-')
+fname = paste(filenameOut, 'climateology-.nc',sep = '-')
 
-if (file.exists(fname)) clim = stack(filename) else {
+if (file.exists(fname)) clim = brick(fname) else {
     addLayers <- function(ci, i, j) r = ci[[j]] + i[[j]]
     clim = dats[[1]]
     for (i in dats[-1]) for (j in 1:nlayers(i))
@@ -82,3 +82,32 @@ if (file.exists(fname)) clim = stack(filename) else {
 
     clim = writeRaster(clim, fname)
 }
+
+
+
+calculateBenchmarks <- function(dat) {
+    year = filename(dat[[1]])
+    year = strsplit(year, '-')[[1]][2]
+
+    cat("Calculating Benchmarks for:", year)
+
+    filenames = paste(filenameOut, year,
+                     c('Max', 'Min', 'Mean', 'AbsVar', 'Phase', 'Conc'), '.nc',
+                     sep = '-')
+
+           saveRasterFun.raster(   max.bigRaster, dat,       filename = filenames[1])
+           saveRasterFun.raster(   min.bigRaster, dat,       filename = filenames[2])
+    mean = saveRasterFun.raster(  mean.bigRaster, dat,       filename = filenames[3])
+           saveRasterFun.raster(absVar.bigRaster, dat, mean, filename = filenames[4])
+
+    if (any(!file.exists(filenames[5:6]))) {
+        c(phase, conc) := PolarConcentrationAndPhase(dat, 'months', n = nlayers(dat))
+
+        nullFun <- function(r) r
+        saveRasterFun.raster(nullFun, phase, filename = filenames[5])
+        saveRasterFun.raster(nullFun, conc, filename = filenames[6])
+    }
+}
+
+lapply(dats, calculateBenchmarks)
+calculateBenchmarks(clim)
