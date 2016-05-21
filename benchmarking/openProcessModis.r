@@ -6,11 +6,14 @@ library(benchmarkMetrics)
 setupProjectStructure()
 
 sourceAllLibs()
-try(memSafeFile.remove(), silent = TRUE)
-memSafeFile.initialise('temp/')
 
 dir = 'data/MODIS/hdf_zipped/'
 filenameOut = 'outputs/MODIS'
+
+memSafe.setup <- function() {
+    try(memSafeFile.remove(), silent = TRUE)
+    memSafeFile.initialise('temp/')
+}
 
 years = list.files(dir, include.dirs = TRUE, full.names = TRUE)
 
@@ -42,7 +45,7 @@ interpolate <- function(dats, mask) {
 openYear <- function(year) {
     filename = paste(filenameOut, tail(strsplit(year, '/')[[1]], 1), 'interp.nc', sep = '-')
     if (file.exists(filename)) return(stack(filename))
-
+    memSafe.setup()
     cat('Opening and processing files from: \n\t', filename, '\n\n')
 
     cat("\t find files \n")
@@ -75,6 +78,7 @@ dats = lapply(years, openYear)
 fname = paste(filenameOut, 'climateology-.nc',sep = '-')
 
 if (file.exists(fname)) clim = brick(fname) else {
+    memSafe.setup()
     addLayers <- function(ci, i, j) r = ci[[j]] + i[[j]]
     clim = dats[[1]]
     for (i in dats[-1]) for (j in 1:nlayers(i))
@@ -86,6 +90,7 @@ if (file.exists(fname)) clim = brick(fname) else {
 
 
 calculateBenchmarks <- function(dat) {
+    memSafe.setup()
     year = filename(dat[[1]])
     year = strsplit(year, '-')[[1]][2]
 
