@@ -53,7 +53,7 @@ openYear <- function(year) {
     files = files[substr(files, nchar(files) - 3, nchar(files)) == ".hdf"]
 
     cat("\t Opening data \n")
-    dats  = layer.apply(files, rasterTry, files[1])
+    dats  = layer.apply(files, rasterTry, files[1], rasterFun = raster.modis)
     dats  = memSafe.layer.apply(dats, maskMissing)
 
     cat("\t Calculating Mask \n")
