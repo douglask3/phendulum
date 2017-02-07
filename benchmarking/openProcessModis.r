@@ -106,11 +106,11 @@ calculateBenchmarks <- function(dat) {
            saveRasterFun.raster(absVar.bigRaster, dat, mean, filename = filenames[4])
 
     if (any(!file.exists(filenames[5:6]))) {
-        c(phase, conc) := PolarConcentrationAndPhase(dat, 'months', n = nlayers(dat))
+        pc = PolarConcentrationAndPhase(dat, 'months', n = nlayers(dat))
 
         nullFun <- function(r) r
-        saveRasterFun.raster(nullFun, phase, filename = filenames[5])
-        saveRasterFun.raster(nullFun, conc, filename = filenames[6])
+        saveRasterFun.raster(nullFun, pc[[1]], filename = filenames[5])
+        saveRasterFun.raster(nullFun, pc[[2]], filename = filenames[6])
     }
 }
 

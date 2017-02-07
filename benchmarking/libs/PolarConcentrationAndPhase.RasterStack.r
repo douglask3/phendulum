@@ -1,5 +1,5 @@
-PolarConcentrationAndPhase.RasterStack <-
-function (dat, phase_units = "radians", n = min(12, nlayers(dat)),
+PolarConcentrationAndPhase <-
+function (dat, phase_units = "radians", n =nlayers(dat),
     disagFact = NaN, justPhase = FALSE)
 {
     if (nlayers(dat) < n) {
@@ -17,16 +17,29 @@ function (dat, phase_units = "radians", n = min(12, nlayers(dat)),
     if (!is.na(disagFact))
         dat = layer.apply(dat, disaggregate, disagFact, method = "bilinear")
     out = dat[[1:2]]
+    out[,] = NaN
     names(out) = c("Phase", "Concentration")
-    vout = PolarConcentrationAndPhase(values(dat), phase_units)
-    test = sum.bigRaster(dat) == 0
-    if (justPhase)
-        index = 1
-    else index = 1:2
-    for (i in index) {
-        out[[i]] = vout[[i]]
-        out[[i]][test] = NaN
+    nc = ncol(dat); nr = nrow(dat)
+    for (i in 1:nr) {#for (j in 1:ncol(dat)){
+        cs = getValuesBlock(dat, i, 1)
+        if (any(!is.na(cs))) {
+            cat("\n %", 100*i/nr)
+            x = y = rep(0, n = nc)
+            for (k in 1:n) {
+                angle = 2 * pi * (n - k + 1) / n
+                x = x + cs[, k] * cos(angle)
+                y = y + cs[, k] * sin(angle)
+            }
+            a = apply(cs, 1, sum)
+
+            index =  which(!is.na(x) & a!=0)
+            x = x[index]; y = y[index]; a = a[index]
+            out[[1]][i, index] = atans(x, y, phase_units)
+
+            if (!justPhase) out[[2]][i, index] = sqrt(x^2 + y^2) / a
+        }
     }
+    cat("\n")
     if (justPhase)
         return(out[[1]])
     return(out)
